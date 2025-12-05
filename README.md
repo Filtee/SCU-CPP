@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 手写数字识别器
 
 这是一个基于Python的手写数字识别程序，提供了多种实现方式，以适应不同的环境和需求。
@@ -114,3 +115,6 @@ python command_line_version.py test_digit.png
 ## 许可证
 
 本项目采用MIT许可证，可自由使用和修改。
+=======
+# SCU-CPP
+>>>>>>> c073967a8c10d6f0fe575c2a82a278b6df310e3a
