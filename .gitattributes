@@ -1,2 +1,4 @@
 digits_model.xml filter=lfs diff=lfs merge=lfs -text
 mnist_recognizer/digits_model.xml filter=lfs diff=lfs merge=lfs -text
+*.zip filter=lfs diff=lfs merge=lfs -text
+*.tar.gz filter=lfs diff=lfs merge=lfs -text
