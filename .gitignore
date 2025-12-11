@@ -78,10 +78,9 @@ data/*
 !data/.gitkeep
 !data/README.md
 
-# 或者，如果你想更精确地只忽略特定大文件：
-data/*.gz
+!data/*.gz
 # data/*.ubyte
-data/*.weights
+!data/*.weights
 
 # =========================
 # 6. IDE 配置文件
