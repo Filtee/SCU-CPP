@@ -80,7 +80,8 @@ data/*
 
 !data/*.gz
 # data/*.ubyte
-!data/*.weights
+data/*.weights
+!data/*.example
 
 # =========================
 # 6. IDE 配置文件
