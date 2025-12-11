@@ -1,77 +1,194 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
   <head>
-    <title>High Accuracy Neural Net</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SCU-CPP 手写数字识别</title>
     <style>
+      :root {
+        --bg-color: #1a1b1e;
+        --card-bg: #25262b;
+        --primary: #339af0;
+        --primary-hover: #228be6;
+        --danger: #fa5252;
+        --danger-hover: #e03131;
+        --text-main: #e9ecef;
+        --text-sub: #adb5bd;
+      }
+
       body {
-        font-family: sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Helvetica, Arial, sans-serif;
+        background-color: var(--bg-color);
+        color: var(--text-main);
         display: flex;
         flex-direction: column;
         align-items: center;
-        background: #222;
-        color: #eee;
+        justify-content: center;
+        min-height: 100vh;
+        margin: 0;
+        padding: 20px;
       }
-      .canvas-container {
+
+      .container {
+        background-color: var(--card-bg);
+        padding: 2rem;
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        text-align: center;
+        max-width: 500px;
+        width: 100%;
+      }
+
+      h1 {
+        margin: 0 0 0.5rem 0;
+        font-size: 1.8rem;
+        font-weight: 700;
+      }
+
+      p.subtitle {
+        color: var(--text-sub);
+        margin-bottom: 2rem;
+        font-size: 0.9rem;
+      }
+
+      .canvas-wrapper {
         position: relative;
-        margin: 20px;
+        margin: 0 auto 2rem auto;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 2px solid #373a40;
+        display: inline-block;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
       }
+
       canvas {
-        border: 2px solid #555;
-        background: black;
+        display: block;
+        background: #000;
         cursor: crosshair;
-        touch-action: none;
+        touch-action: none; /* 防止手机端绘图时滚动 */
       }
-      /* 隐藏的小 Canvas，用于调试可设为 display: block */
+
+      /* 隐藏的处理用 Canvas */
       #hiddenCanvas {
         display: none;
-        border: 1px solid red;
-        margin-top: 10px;
-        background: black;
       }
+
       .controls {
-        margin-top: 20px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin-bottom: 2rem;
       }
+
       button {
         padding: 12px 24px;
-        font-size: 16px;
-        background: #444;
-        color: white;
+        font-size: 1rem;
+        font-weight: 600;
         border: none;
+        border-radius: 8px;
         cursor: pointer;
-        border-radius: 4px;
+        transition: all 0.2s ease;
+        color: white;
       }
-      button:hover {
-        background: #666;
+
+      button:active {
+        transform: scale(0.98);
       }
+
+      .btn-clear {
+        background-color: #343a40;
+        color: var(--text-sub);
+      }
+
+      .btn-clear:hover {
+        background-color: var(--danger);
+        color: white;
+      }
+
+      .btn-predict {
+        background-color: var(--primary);
+      }
+
+      .btn-predict:hover {
+        background-color: var(--primary-hover);
+      }
+
+      .result-area {
+        background-color: rgba(0, 0, 0, 0.2);
+        border-radius: 12px;
+        padding: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+      }
+
+      .result-label {
+        font-size: 0.85rem;
+        color: var(--text-sub);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 0.5rem;
+      }
+
       #result {
-        font-size: 80px;
-        font-weight: bold;
-        margin-top: 20px;
-        color: #00ff00;
-        min-height: 100px;
+        font-size: 4rem;
+        font-weight: 800;
+        line-height: 1;
+        color: var(--primary);
+        min-height: 4rem;
+        text-shadow: 0 0 20px rgba(51, 154, 240, 0.3);
+      }
+
+      /* 加载动画 */
+      .loading {
+        animation: pulse 1.5s infinite;
+        color: var(--text-sub) !important;
+        font-size: 1.5rem !important;
+      }
+
+      @keyframes pulse {
+        0% {
+          opacity: 0.5;
+        }
+        50% {
+          opacity: 1;
+        }
+        100% {
+          opacity: 0.5;
+        }
       }
     </style>
   </head>
   <body>
-    <h1>Digit Recognizer (Optimized)</h1>
+    <div class="container">
+      <h1>手写数字识别系统</h1>
+      <p class="subtitle">C++ 神经网络内核驱动 | MNIST 数据集</p>
 
-    <div class="canvas-container">
-      <canvas id="mainCanvas" width="280" height="280"></canvas>
+      <div class="canvas-wrapper">
+        <canvas id="mainCanvas" width="400" height="400"></canvas>
+      </div>
+
+      <canvas id="hiddenCanvas" width="28" height="28"></canvas>
+
+      <div class="controls">
+        <button class="btn-clear" onclick="clearCanvas()">清空画布</button>
+        <button class="btn-predict" onclick="predict()">立即识别</button>
+      </div>
+
+      <div class="result-area">
+        <span class="result-label">AI 识别结果</span>
+        <div id="result">?</div>
+      </div>
     </div>
-
-    <canvas id="hiddenCanvas" width="28" height="28"></canvas>
-
-    <div class="controls">
-      <button onclick="clearCanvas()">Clear</button>
-      <button onclick="predict()">Recognize</button>
-    </div>
-    <div id="result">?</div>
 
     <script>
       const mainCanvas = document.getElementById("mainCanvas");
       const hiddenCanvas = document.getElementById("hiddenCanvas");
       const ctx = mainCanvas.getContext("2d");
       const hCtx = hiddenCanvas.getContext("2d");
+      const resultEl = document.getElementById("result");
 
       let isDrawing = false;
 
@@ -79,9 +196,11 @@
       function init() {
         ctx.fillStyle = "black";
         ctx.fillRect(0, 0, mainCanvas.width, mainCanvas.height);
-        // 笔触设置：白色，粗线条 (20-25px 适合 280x280)
+
+        // 笔触设置：因为画布变大了，线条也要变粗
+        // 之前是 24 (对于 280px)，现在 400px 用 35 比较合适
         ctx.strokeStyle = "white";
-        ctx.lineWidth = 24;
+        ctx.lineWidth = 35;
         ctx.lineCap = "round";
         ctx.lineJoin = "round";
       }
@@ -96,12 +215,18 @@
         isDrawing = false;
         ctx.beginPath();
       };
+
       const draw = (e) => {
         if (!isDrawing) return;
         e.preventDefault();
+
         const rect = mainCanvas.getBoundingClientRect();
-        const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-        const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+        // 处理触摸屏和鼠标坐标的差异
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+        const x = clientX - rect.left;
+        const y = clientY - rect.top;
 
         ctx.lineTo(x, y);
         ctx.stroke();
@@ -109,12 +234,16 @@
         ctx.moveTo(x, y);
       };
 
+      // 鼠标事件
       mainCanvas.addEventListener("mousedown", (e) => {
         ctx.beginPath();
         start(e);
       });
       mainCanvas.addEventListener("mouseup", end);
       mainCanvas.addEventListener("mousemove", draw);
+      mainCanvas.addEventListener("mouseleave", end);
+
+      // 触摸事件 (手机/平板)
       mainCanvas.addEventListener("touchstart", (e) => {
         ctx.beginPath();
         start(e);
@@ -124,10 +253,11 @@
 
       function clearCanvas() {
         init();
-        document.getElementById("result").innerText = "?";
+        resultEl.innerText = "?";
+        resultEl.style.color = "var(--primary)";
       }
 
-      // --- 核心优化：预处理图片 ---
+      // --- 核心优化：预处理图片 (智能裁剪 + 缩放) ---
       function getBoundingBox(imageData) {
         const data = imageData.data;
         let minX = imageData.width,
@@ -161,9 +291,14 @@
         );
 
         if (!bbox) {
-          document.getElementById("result").innerText = "?";
+          resultEl.innerText = "?";
           return;
         }
+
+        // 显示加载状态
+        const originalText = resultEl.innerText;
+        resultEl.innerText = "分析中...";
+        resultEl.classList.add("loading");
 
         // 2. 清理隐藏画布 (全黑)
         hCtx.fillStyle = "black";
@@ -174,12 +309,12 @@
         const scale = 20 / maxDim;
 
         // 4. 将裁剪出的数字绘制到隐藏画布中心
-        // drawImage(source, sx, sy, sw, sh, dx, dy, dw, dh)
         const destW = bbox.w * scale;
         const destH = bbox.h * scale;
         const destX = 4 + (20 - destW) / 2; // 水平居中
         const destY = 4 + (20 - destH) / 2; // 垂直居中
 
+        // 这是一个高质量的下采样过程
         hCtx.drawImage(
           mainCanvas,
           bbox.x,
@@ -197,7 +332,7 @@
         const inputBuffer = new Uint8Array(784);
 
         for (let i = 0; i < 784; i++) {
-          // 取红色通道作为灰度值
+          // 取红色通道作为灰度值 (黑白图 RGB 通道值一样)
           inputBuffer[i] = imgData[i * 4];
         }
 
@@ -208,11 +343,18 @@
             headers: { "Content-Type": "application/octet-stream" },
             body: inputBuffer,
           });
+
+          if (!response.ok) throw new Error("Server Error");
+
           const text = await response.text();
-          document.getElementById("result").innerText = text;
+          resultEl.classList.remove("loading");
+          resultEl.innerText = text;
+          resultEl.style.color = "var(--primary)";
         } catch (e) {
           console.error(e);
-          document.getElementById("result").innerText = "Err";
+          resultEl.classList.remove("loading");
+          resultEl.innerText = "错误";
+          resultEl.style.color = "var(--danger)";
         }
       }
     </script>

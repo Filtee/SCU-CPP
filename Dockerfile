@@ -31,7 +31,7 @@ RUN mkdir -p /app/data
 
 EXPOSE 8080
 
-# 【修改点 3】设置 Entrypoint 为我们的脚本
+# 设置 Entrypoint 为我们的脚本
 ENTRYPOINT ["/app/entrypoint.sh"]
 
 # 默认命令
