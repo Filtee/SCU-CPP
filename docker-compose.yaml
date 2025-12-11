@@ -1,0 +1,15 @@
+version: "3.8"
+services:
+  recognizer:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./static:/app/static
+      # 挂载数据目录，确保持久化训练好的模型
+      - ./data:/app/data
+    environment:
+      - EPOCHS=20 # 增加训练轮数 (原为3)
+      - LEARNING_RATE=0.1 # 学习率
+      - HIDDEN_NODES=200 # 增加隐藏层节点 (原为128)
+      - MODEL_PATH=/app/data/model.weights

@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>High Accuracy Neural Net</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        background: #222;
+        color: #eee;
+      }
+      .canvas-container {
+        position: relative;
+        margin: 20px;
+      }
+      canvas {
+        border: 2px solid #555;
+        background: black;
+        cursor: crosshair;
+        touch-action: none;
+      }
+      /* 隐藏的小 Canvas，用于调试可设为 display: block */
+      #hiddenCanvas {
+        display: none;
+        border: 1px solid red;
+        margin-top: 10px;
+        background: black;
+      }
+      .controls {
+        margin-top: 20px;
+      }
+      button {
+        padding: 12px 24px;
+        font-size: 16px;
+        background: #444;
+        color: white;
+        border: none;
+        cursor: pointer;
+        border-radius: 4px;
+      }
+      button:hover {
+        background: #666;
+      }
+      #result {
+        font-size: 80px;
+        font-weight: bold;
+        margin-top: 20px;
+        color: #00ff00;
+        min-height: 100px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Digit Recognizer (Optimized)</h1>
+
+    <div class="canvas-container">
+      <canvas id="mainCanvas" width="280" height="280"></canvas>
+    </div>
+
+    <canvas id="hiddenCanvas" width="28" height="28"></canvas>
+
+    <div class="controls">
+      <button onclick="clearCanvas()">Clear</button>
+      <button onclick="predict()">Recognize</button>
+    </div>
+    <div id="result">?</div>
+
+    <script>
+      const mainCanvas = document.getElementById("mainCanvas");
+      const hiddenCanvas = document.getElementById("hiddenCanvas");
+      const ctx = mainCanvas.getContext("2d");
+      const hCtx = hiddenCanvas.getContext("2d");
+
+      let isDrawing = false;
+
+      // 初始化
+      function init() {
+        ctx.fillStyle = "black";
+        ctx.fillRect(0, 0, mainCanvas.width, mainCanvas.height);
+        // 笔触设置：白色，粗线条 (20-25px 适合 280x280)
+        ctx.strokeStyle = "white";
+        ctx.lineWidth = 24;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+      }
+      init();
+
+      // --- 绘图逻辑 ---
+      const start = (e) => {
+        isDrawing = true;
+        draw(e);
+      };
+      const end = () => {
+        isDrawing = false;
+        ctx.beginPath();
+      };
+      const draw = (e) => {
+        if (!isDrawing) return;
+        e.preventDefault();
+        const rect = mainCanvas.getBoundingClientRect();
+        const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+        const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+
+        ctx.lineTo(x, y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+      };
+
+      mainCanvas.addEventListener("mousedown", (e) => {
+        ctx.beginPath();
+        start(e);
+      });
+      mainCanvas.addEventListener("mouseup", end);
+      mainCanvas.addEventListener("mousemove", draw);
+      mainCanvas.addEventListener("touchstart", (e) => {
+        ctx.beginPath();
+        start(e);
+      });
+      mainCanvas.addEventListener("touchend", end);
+      mainCanvas.addEventListener("touchmove", draw);
+
+      function clearCanvas() {
+        init();
+        document.getElementById("result").innerText = "?";
+      }
+
+      // --- 核心优化：预处理图片 ---
+      function getBoundingBox(imageData) {
+        const data = imageData.data;
+        let minX = imageData.width,
+          minY = imageData.height,
+          maxX = 0,
+          maxY = 0;
+        let found = false;
+
+        for (let y = 0; y < imageData.height; y++) {
+          for (let x = 0; x < imageData.width; x++) {
+            const i = (y * imageData.width + x) * 4;
+            // 如果红色通道 > 0 (非黑色)
+            if (data[i] > 0) {
+              if (x < minX) minX = x;
+              if (x > maxX) maxX = x;
+              if (y < minY) minY = y;
+              if (y > maxY) maxY = y;
+              found = true;
+            }
+          }
+        }
+        return found
+          ? { x: minX, y: minY, w: maxX - minX + 1, h: maxY - minY + 1 }
+          : null;
+      }
+
+      async function predict() {
+        // 1. 获取边界框 (Crop)
+        const bbox = getBoundingBox(
+          ctx.getImageData(0, 0, mainCanvas.width, mainCanvas.height)
+        );
+
+        if (!bbox) {
+          document.getElementById("result").innerText = "?";
+          return;
+        }
+
+        // 2. 清理隐藏画布 (全黑)
+        hCtx.fillStyle = "black";
+        hCtx.fillRect(0, 0, 28, 28);
+
+        // 3. 计算缩放比例，将内容放入 20x20 的框中 (留出 4px 边距，类似 MNIST)
+        const maxDim = Math.max(bbox.w, bbox.h);
+        const scale = 20 / maxDim;
+
+        // 4. 将裁剪出的数字绘制到隐藏画布中心
+        // drawImage(source, sx, sy, sw, sh, dx, dy, dw, dh)
+        const destW = bbox.w * scale;
+        const destH = bbox.h * scale;
+        const destX = 4 + (20 - destW) / 2; // 水平居中
+        const destY = 4 + (20 - destH) / 2; // 垂直居中
+
+        hCtx.drawImage(
+          mainCanvas,
+          bbox.x,
+          bbox.y,
+          bbox.w,
+          bbox.h,
+          destX,
+          destY,
+          destW,
+          destH
+        );
+
+        // 5. 提取 28x28 像素数据
+        const imgData = hCtx.getImageData(0, 0, 28, 28).data;
+        const inputBuffer = new Uint8Array(784);
+
+        for (let i = 0; i < 784; i++) {
+          // 取红色通道作为灰度值
+          inputBuffer[i] = imgData[i * 4];
+        }
+
+        // 6. 发送给后端
+        try {
+          const response = await fetch("/predict", {
+            method: "POST",
+            headers: { "Content-Type": "application/octet-stream" },
+            body: inputBuffer,
+          });
+          const text = await response.text();
+          document.getElementById("result").innerText = text;
+        } catch (e) {
+          console.error(e);
+          document.getElementById("result").innerText = "Err";
+        }
+      }
+    </script>
+  </body>
+</html>

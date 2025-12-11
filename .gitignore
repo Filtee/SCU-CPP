@@ -1,0 +1,91 @@
+# =========================
+# 1. 操作系统生成的临时文件
+# =========================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# =========================
+# 2. 编译构建目录与产物
+# =========================
+# 这里的 server 是 CMakeLists.txt 中 add_executable 生成的目标文件名
+server
+# 标准构建目录
+build/
+cmake-build-debug/
+bin/
+lib/
+
+# CMake 自动生成的文件 (如果你在根目录运行了 cmake)
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.cmake
+!CMakeLists.txt
+
+# =========================
+# 3. C/C++ 编译中间件 (保留你提供的列表)
+# =========================
+# Prerequisites
+*.d
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+# Precompiled Headers
+*.gch
+*.pch
+# Linker files
+*.ilk
+# Debugger Files
+*.pdb
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+# Executables
+*.exe
+*.out
+*.app
+# debug information files
+*.dwo
+
+# =========================
+# 4. Python (清理 __pycache__)
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+
+# =========================
+# 5. 数据集与模型文件 (重要)
+# =========================
+# 忽略 data 目录下的所有内容，因为数据集和模型通常很大，不应上传到 git
+data/*
+
+# 但是！保留 data 目录本身 (通过保留一个空文件或说明文件)
+!data/.gitkeep
+!data/README.md
+
+# 或者，如果你想更精确地只忽略特定大文件：
+data/*.gz
+# data/*.ubyte
+data/*.weights
+
+# =========================
+# 6. IDE 配置文件
+# =========================
+.vscode/
+.idea/
+*.swp
