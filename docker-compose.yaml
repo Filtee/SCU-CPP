@@ -2,15 +2,13 @@ version: "3.8"
 services:
   recognizer:
     build: .
-    # 【关键修改】开启 TTY 模式，解决进度条不显示的问题
-    tty: true
     ports:
       - "8080:8080"
     volumes:
       - ./static:/app/static
       - ./data:/app/data
     environment:
-      - EPOCHS=100
-      - LEARNING_RATE=0.01
+      - EPOCHS=3
+      - LEARNING_RATE=0.1
       - HIDDEN_NODES=200
       - MODEL_PATH=/app/data/model.weights
